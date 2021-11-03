@@ -37,7 +37,7 @@ class Control:
         return
 
     def set_tray(self, version):
-        self.tray = Tray(version)
+        self.tray = Tray(version=version, gantry=self.gantry)
         self.tray.calibrate()
         self.gantry.moverel(z=self.gantry.ZHOP_HEIGHT)
 

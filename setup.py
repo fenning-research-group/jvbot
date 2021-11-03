@@ -21,7 +21,7 @@ setup(
     license="MIT",
     install_requires=[
         "numpy",
-        "natsorted",
+        "natsort",
         "tqdm",
         "pymeasure"
     ],
@@ -33,7 +33,7 @@ setup(
     # },
     packages=find_packages(),
     package_data={
-        "hardware": ["*.yaml"]
+        "hardware": ["*.yaml"],
         "tray_versions": ["*.yaml"],
     },
     include_package_data=True,

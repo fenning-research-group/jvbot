@@ -51,6 +51,7 @@ class Tray:
             xidx + 1 for xidx in range(self.gridsize[0])
         ]  # numbering -x -> +x = 1 -> 100
 
+        self.CALIBRATIONSLOT = None
         for yidx in range(self.gridsize[1]):  # y
             for xidx in range(self.gridsize[0]):  # x
                 name = f"{self._ycoords[yidx]}{self._xcoords[xidx]}"
@@ -61,6 +62,9 @@ class Tray:
                         0,
                     ]
                 )
+
+            if self.CALIBRATIONSLOT is None:
+                self.CALIBRATIONSLOT = name #last slot, should be the bottom right one
 
     def get_slot_coordinates(self, name):
         if self.__calibrated == False:
@@ -74,7 +78,7 @@ class Tray:
 
     def calibrate(self):
         """Calibrate the coordinate system of this workspace."""
-        print("Make contact with device A1 to calibrate the tray position")
+        print(f"Make contact with device {self.CALIBRATIONSLOT} to calibrate the tray position")
         self.gantry.gui()
-        self.offset = self.gantry.position - self._coordinates["A1"]
+        self.offset = self.gantry.position - self._coordinates[self.CALIBRATIONSLOT]
         self.__calibrated = True

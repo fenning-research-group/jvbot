@@ -21,9 +21,8 @@ gantry:
   load_coordinates: [30, 0, 20] #coordinates to move the gantry out of the way for of glovebox operator
 
 keithley:
-  address: "GPIB0::20::INSTR",
+  address: "GPIB1::25::INSTR"
   four_wire: False # True for 4-wire meas, False for 2-wire
   compliance_current: 1.05 #compliance current (A) for keithley
   compliance_voltage: 2 #compliance voltage (V) for keithley
   counts: 2 #number of readings to take at each point
-# shutter:

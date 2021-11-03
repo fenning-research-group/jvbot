@@ -1,0 +1,7 @@
+README.md
+setup.py
+jvbot.egg-info/PKG-INFO
+jvbot.egg-info/SOURCES.txt
+jvbot.egg-info/dependency_links.txt
+jvbot.egg-info/requires.txt
+jvbot.egg-info/top_level.txt

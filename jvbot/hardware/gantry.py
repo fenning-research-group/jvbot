@@ -9,7 +9,7 @@ import os
 
 # from PyQt5.QtCore.Qt import AlignHCenter
 from functools import partial
-from helpers import get_port
+from jvbot.hardware.helpers import get_port
 
 
 MODULE_DIR = os.path.dirname(__file__)
@@ -59,9 +59,9 @@ class Gantry:
         self.update()
         # self.update_gripper()
         if self.position == [
-            self.__OVERALL_LIMS["x_max"],
-            self.__OVERALL_LIMS["y_max"],
-            self.__OVERALL_LIMS["z_max"],
+            self.__LIMITS["x_max"],
+            self.__LIMITS["y_max"],
+            self.__LIMITS["z_max"],
         ]:  # this is what it shows when initially turned on, but not homed
             self.position = [
                 None,
@@ -158,7 +158,7 @@ class Gantry:
 
         return x, y, z
 
-    def moveto(self, x=None, y=None, z=None, zhop=True, speed=None):
+    def moveto(self, x=None, y=None, z=None, zhop=True):
         """
         moves to target position in x,y,z (mm)
         """
@@ -168,36 +168,35 @@ class Gantry:
         except:
             pass
         x, y, z = self.premove(x, y, z)  # will error out if invalid move
-        if speed is None:
-            speed = self.speed
+
         if (x == self.position[0]) and (y == self.position[1]):
             zhop = False  # no use zhopping for no lateral movement
         if zhop:
             z_ceiling = (
                 min(self.position[2], z) - self.ZHOP_HEIGHT
             )  # closest z coordinate to bottom along path
-            z_ceiling = min(
+            z_floor = max(
                 z_ceiling, self.__ZLIM
             )  # cant z-hop above build volume. mostly here for first move after homing.
-            self.moveto(z=z_ceiling, zhop=False, speed=speed)
-            self.moveto(x, y, z_ceiling, zhop=False, speed=speed)
-            self.moveto(z=z, zhop=False, speed=speed)
+            self.moveto(z=z_ceiling, zhop=False)
+            self.moveto(x, y, z_ceiling, zhop=False)
+            self.moveto(z=z, zhop=False)
         else:
-            self._movecommand(x, y, z, speed)
+            self._movecommand(x, y, z)
 
     def movetoload(self):
         self.moveto(self.LOAD_COORDINATES)
 
-    def _movecommand(self, x: float, y: float, z: float, speed: float):
+    def _movecommand(self, x: float, y: float, z: float):
         """internal command to execute a direct move from current location to new location"""
         if self.position == [x, y, z]:
             return True  # already at target position
         else:
             self.__targetposition = [x, y, z]
-            self.write(f"G0 X{x} Y{y} Z{z} F{speed}")
+            self.write(f"G0 X{x} Y{y} Z{z}")
             return self._waitformovement()
 
-    def moverel(self, x=0, y=0, z=0, zhop=False, speed=None):
+    def moverel(self, x=0, y=0, z=0, zhop=False):
         """
         moves by coordinates relative to the current position
         """
@@ -209,7 +208,7 @@ class Gantry:
         x += self.position[0]
         y += self.position[1]
         z += self.position[2]
-        self.moveto(x, y, z, zhop, speed)
+        self.moveto(x, y, z, zhop)
 
     def _waitformovement(self):
         """

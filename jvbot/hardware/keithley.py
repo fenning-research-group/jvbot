@@ -2,6 +2,7 @@ from pymeasure.instruments.keithley import Keithley2400
 import time
 import yaml
 import numpy as np
+import os
 
 MODULE_DIR = os.path.dirname(__file__)
 with open(os.path.join(MODULE_DIR, "hardwareconstants.yaml"), "r") as f:
@@ -55,7 +56,7 @@ class Keithley(Keithley2400):
         """
         returns voltage, current, and resistance measured
         """
-        self.config_buffer(self.counts)
+        self.config_buffer(self.constants["counts"])
         self.start_buffer()
         self.wait_for_buffer()
         return self.means
