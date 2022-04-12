@@ -87,8 +87,8 @@ class Keithley(Keithley2400):
         self.source_voltage = vmin
 
         v = np.linspace(vmin, vmax, steps)
-        vmeas = np.zeros((steps,))
-        i = np.zeros((steps,))
+        vmeas = np.zeros(steps)
+        i = np.zeros(steps)
 
         self.enable_source()
         for m, v_ in enumerate(v):

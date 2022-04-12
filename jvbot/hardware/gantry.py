@@ -83,7 +83,7 @@ class Gantry:
             "M92 X53.0 Y53.0 Z3200.0"
         )  # feedrate steps/mm, randomly resets to defaults sometimes idk why
         self.write(
-            "M9201 X500.0 Y500.0 Z20.0"
+            "M201 X500.0 Y500.0 Z20.0"
         )  # acceleration steps/mm/mm, randomly resets to defaults sometimes idk why
         self.write(
             "M906 X580 Y580 Z25 E1"
