@@ -18,25 +18,34 @@ class Tray:
     the reference workspace to account for any tilt/rotation/translation in workspace mounting.
     """
 
-    def __init__(self, version: str, gantry: Gantry):
+    def __init__(self, version: str, gantry: Gantry, calibrate:bool = False):
         self._calibrated = False  # set to True after calibration routine has been run
-        self._load_version(version)  # generates grid of sample slot coordinates
         self.gantry = gantry
+        self._load_version(version, calibrate=calibrate)  # generates grid of sample slot coordinates
 
         # coordinate system properties
-        self.__generate_coordinates()
 
-    def _load_version(self, version):
+    def _load_version(self, version, calibrate=False):
         if version not in AVAILABLE_VERSIONS:
             raise Exception(
                 f'Invalid tray version "{version}".\n Available versions are: {list(AVAILABLE_VERSIONS.keys())}.'
             )
         with open(AVAILABLE_VERSIONS[version], "r") as f:
             constants = yaml.load(f, Loader=yaml.FullLoader)
-
+        self.version = version
         self.pitch = (constants["xpitch"], constants["ypitch"])
         self.gridsize = (constants["numx"], constants["numy"])
         self.z_clearance = constants["z_clearance"]
+        self.__generate_coordinates()
+
+        if 'offset' in constants:
+            self.offset = np.array([constants['offset']['x'], constants['offset']['y'], constants['offset']['z']])
+            self.__calibrated = True
+        else:
+            print('No offset found in yaml file for this tray version, forcing calibration step.')
+            calibrate = True
+        if calibrate:
+            self.calibrate()
 
     def __generate_coordinates(self):
         def letter(num):
@@ -81,4 +90,14 @@ class Tray:
         print(f"Make contact with device {self.CALIBRATIONSLOT} to calibrate the tray position")
         self.gantry.gui()
         self.offset = self.gantry.position - self._coordinates[self.CALIBRATIONSLOT]
+        self.gantry.moverel(z=self.gantry.ZHOP_HEIGHT)
+
+
         self.__calibrated = True
+
+        with open(AVAILABLE_VERSIONS[self.version], "r") as f:
+            constants = yaml.load(f, Loader=yaml.FullLoader)
+        constants['offset'] = {k:float(v) for k,v in zip(['x', 'y', 'z'], self.offset)}
+
+        with open(AVAILABLE_VERSIONS[self.version], "w") as f:
+            yaml.dump(constants, f)

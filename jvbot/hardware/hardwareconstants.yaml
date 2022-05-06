@@ -18,7 +18,7 @@ gantry:
   # speed_max: 10000 #max gantry speed, mm/min
   # speed_min: 500 #min gantry speed, mm/min
   zhop_height: 5 #vertical clearance (mm) to use when moving between two cells. will move this amount above the highest z point
-  load_coordinates: [30, 0, 20] #coordinates to move the gantry out of the way for of glovebox operator
+  load_coordinates: [30, 170, 20] #coordinates to move the gantry out of the way for of glovebox operator
 
 keithley:
   address: "GPIB1::25::INSTR"

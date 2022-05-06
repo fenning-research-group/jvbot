@@ -22,7 +22,7 @@ class Control:
     def __init__(self, area=0.07, savedir="."):
         self.area = area  # cm2
         self.pause = 0.05
-        self.keithley = Keithley()
+        # self.keithley = Keithley()
         self.gantry = Gantry()
         self.savedir = savedir
 
@@ -36,10 +36,8 @@ class Control:
         # self._shutteropen = False
         return
 
-    def set_tray(self, version):
-        self.tray = Tray(version=version, gantry=self.gantry)
-        self.tray.calibrate()
-        self.gantry.moverel(z=self.gantry.ZHOP_HEIGHT)
+    def set_tray(self, version:str, calibrate:bool = False):
+        self.tray = Tray(version=version, gantry=self.gantry, calibrate=calibrate)
 
     def _save_to_csv(self, slot, i, v, direction):
         fpath = os.path.join(self.savedir, f"{slot}_{direction}.csv")

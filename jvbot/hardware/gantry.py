@@ -47,9 +47,9 @@ class Gantry:
         self.POSITIONTOLERANCE = constants["gantry"][
             "positiontolerance"
         ]  # tolerance for position, in mm
-        self.ZHOP_HEIGHT = constants["gantry"][
+        self.ZHOP_HEIGHT = -constants["gantry"][
             "zhop_height"
-        ]  # mm above endpoints to move to in between points
+        ]  # mm above endpoints to move to in between points. note negative because z=0 is top of build volume
 
         self.connect()  # connect by default
 
@@ -83,7 +83,7 @@ class Gantry:
             "M92 X53.0 Y53.0 Z3200.0"
         )  # feedrate steps/mm, randomly resets to defaults sometimes idk why
         self.write(
-            "M201 X500.0 Y500.0 Z20.0"
+            "M201 X500.0 Y500.0 Z10.0"
         )  # acceleration steps/mm/mm, randomly resets to defaults sometimes idk why
         self.write(
             "M906 X580 Y580 Z25 E1"
@@ -92,7 +92,7 @@ class Gantry:
             "M84 S0"
         )  # disable stepper timeout, steppers remain engaged all the time
         self.write(
-            f"M203 X100 Y100 Z8.00"
+            f"M203 X100 Y100 Z5.00"
         )  # set max speeds, steps/mm. Z is hardcoded, limited by lead screw hardware.
 
     def write(self, msg):
@@ -127,7 +127,9 @@ class Gantry:
 
     # gantry methods
     def gohome(self):
-        self.write("G28 X Y Z")
+        self.write("G28 Z")
+        self.update()
+        self.write("G28 X Y")
         self.update()
         self.movetoload()
 
@@ -147,12 +149,12 @@ class Gantry:
             y = self.position[2]
 
         if (
-            x > self.__LIMITS["x_max"]
-            or x < self.__LIMITS["x_min"]
-            or y > self.__LIMITS["y_max"]
-            or y < self.__LIMITS["y_min"]
-            or z > self.__LIMITS["z_max"]
-            or z < self.__LIMITS["z_min"]
+            (x > self.__LIMITS["x_max"])
+            or (x < self.__LIMITS["x_min"])
+            or (y > self.__LIMITS["y_max"])
+            or (y < self.__LIMITS["y_min"])
+            or (z > self.__LIMITS["z_max"])
+            or (z < self.__LIMITS["z_min"])
         ):
             raise Exception("Target position is out of bounds!")
 
@@ -173,7 +175,7 @@ class Gantry:
             zhop = False  # no use zhopping for no lateral movement
         if zhop:
             z_ceiling = (
-                min(self.position[2], z) - self.ZHOP_HEIGHT
+                min(self.position[2], z) + self.ZHOP_HEIGHT
             )  # closest z coordinate to bottom along path
             z_floor = max(
                 z_ceiling, self.__ZLIM
@@ -307,10 +309,10 @@ class GantryGUI:
 
         self.jogup = QPushButton("Up")
         self.grid.addWidget(self.jogup, 2, 3)
-        self.jogup.clicked.connect(partial(self.jog, z=1))
+        self.jogup.clicked.connect(partial(self.jog, z=-1))
 
         self.jogdown = QPushButton("Down")
-        self.jogdown.clicked.connect(partial(self.jog, z=-1))
+        self.jogdown.clicked.connect(partial(self.jog, z=1))
         self.grid.addWidget(self.jogdown, 3, 3)
 
         ### step size selector buttons
