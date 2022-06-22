@@ -18,10 +18,10 @@ gantry:
   # speed_max: 10000 #max gantry speed, mm/min
   # speed_min: 500 #min gantry speed, mm/min
   zhop_height: 5 #vertical clearance (mm) to use when moving between two cells. will move this amount above the highest z point
-  load_coordinates: [30, 170, 20] #coordinates to move the gantry out of the way for of glovebox operator
+  load_coordinates: [30, 170, 10] #coordinates to move the gantry out of the way for of glovebox operator
 
 keithley:
-  address: "GPIB1::25::INSTR"
+  address: "GPIB0::22::INSTR"
   four_wire: False # True for 4-wire meas, False for 2-wire
   compliance_current: 1.05 #compliance current (A) for keithley
   compliance_voltage: 2 #compliance voltage (V) for keithley

@@ -1,9 +1,9 @@
 numx: 5
 numy: 9
 offset:
-  x: 2.0
+  x: 1.0
   y: 25.0
-  z: 21.5
+  z: 20.6
 openwidth: 12
 samplewidth: 10
 x0: 2.5

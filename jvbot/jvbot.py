@@ -20,9 +20,10 @@ from jvbot.hardware.tray import Tray
 
 class Control:
     def __init__(self, area=0.07, savedir="."):
+        print('deniz 6/22/22')
         self.area = area  # cm2
         self.pause = 0.05
-        # self.keithley = Keithley()
+        self.keithley = Keithley()
         self.gantry = Gantry()
         self.savedir = savedir
 
@@ -39,10 +40,13 @@ class Control:
     def set_tray(self, version:str, calibrate:bool = False):
         self.tray = Tray(version=version, gantry=self.gantry, calibrate=calibrate)
 
-    def _save_to_csv(self, slot, i, v, direction):
+    def _save_to_csv(self, slot, vmeas, i, direction):
         fpath = os.path.join(self.savedir, f"{slot}_{direction}.csv")
+        # i = i
+        # v = v
+        # i = i
         j = i / self.area
-        p = j * v
+        p = j * vmeas
         dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(fpath, "w", newline="") as f:
             writer = csv.writer(f, delimiter=",")
@@ -51,13 +55,13 @@ class Control:
             writer.writerow(["Area (cm2)", self.area])
             writer.writerow(
                 [
-                    "Voltage (V)",
+                    "Voltage Measured (V)",
                     "Current Density (mA/cm2)",
                     "Current (mA)",
                     "Power Density (mW/cm2)",
                 ]
             )
-            for line in zip(v, j, i, p):
+            for line in zip(vmeas, j, i, p):
                 writer.writerow(line)
 
     def scan_cell(self, slot, vmin, vmax, steps=51, direction="forward"):
@@ -68,25 +72,27 @@ class Control:
         if direction == "forward":
             if vmin > vmax:
                 vmin, vmax = vmax, vmin
-            i, v = self.keithley.iv(vmin, vmax, steps)
+            vmeas, i = self.keithley.iv(vmin, vmax, steps)
+            self._save_to_csv(slot, vmeas=vmeas, i=i, direction=direction)
 
         if direction == "reverse":
             if vmin < vmax:
                 vmin, vmax = vmax, vmin
-            i, v = self.keithley.iv(vmin, vmax, steps)
+            vmeas, i = self.keithley.iv(vmin, vmax, steps)
+            self._save_to_csv(slot, vmeas=vmeas, i=i, direction=direction)
 
         if direction == "both":
             self.scan_cell(slot, vmin, vmax, steps, "reverse")
             self.scan_cell(slot, vmin, vmax, steps, "forward")
 
-        self._save_to_csv(slot, i, v, direction)
+        
 
     def scan_tray(
         self,
         tray_version,
         vmin,
         vmax,
-        steps=51,
+        steps=5,
         direction="both",
         final_slot=None,
         slots=None,
