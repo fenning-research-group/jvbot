@@ -20,7 +20,7 @@ from jvbot.hardware.tray import Tray
 
 class Control:
     def __init__(self, area=0.07, savedir="."):
-        print('deniz 6/22/22')
+        print('deniz 9/9/22')
         self.area = area  # cm2
         self.pause = 0.05
         self.keithley = Keithley()
@@ -107,6 +107,7 @@ class Control:
         for slot in tqdm(slots, desc="Scanning Tray"):
             self.gantry.moveto(self.tray(slot))
             self.scan_cell(slot, vmin, vmax, steps, direction)
+        self.gantry.movetoload()
 
     # def _preview(self, v, j, label):
     #     def handle_close(evt, self):
