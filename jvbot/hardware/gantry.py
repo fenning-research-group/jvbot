@@ -148,15 +148,64 @@ class Gantry:
         if z is None:
             y = self.position[2]
 
-        if (
-            (x > self.__LIMITS["x_max"])
-            or (x < self.__LIMITS["x_min"])
-            or (y > self.__LIMITS["y_max"])
-            or (y < self.__LIMITS["y_min"])
-            or (z > self.__LIMITS["z_max"])
-            or (z < self.__LIMITS["z_min"])
-        ):
-            raise Exception("Target position is out of bounds!")
+        # if (
+        #     (x > self.__LIMITS["x_max"])
+        #     # or (x < self.__LIMITS["x_min"])
+        #     # or (y > self.__LIMITS["y_max"])
+        #     # or (y < self.__LIMITS["y_min"])
+        #     # or (z > self.__LIMITS["z_max"])
+        #     # or (z < self.__LIMITS["z_min"])
+        # ):
+        #     raise Exception("Target position x_max is out of bounds!")
+
+
+        # if (
+        #     # (x > self.__LIMITS["x_max"])
+        #     (x < self.__LIMITS["x_min"])
+        #     # or (y > self.__LIMITS["y_max"])
+        #     # or (y < self.__LIMITS["y_min"])
+        #     # or (z > self.__LIMITS["z_max"])
+        #     # or (z < self.__LIMITS["z_min"])
+        # ):
+        #     raise Exception("Target position x_min is out of bounds!")
+
+        # if (
+        #     # (x > self.__LIMITS["x_max"])
+        #     # or (x < self.__LIMITS["x_min"])
+        #     (y > self.__LIMITS["y_max"])
+        #     # or (y < self.__LIMITS["y_min"])
+        #     # or (z > self.__LIMITS["z_max"])
+        #     # or (z < self.__LIMITS["z_min"])
+        # ):
+        #     raise Exception("Target position y_max is out of bounds!")
+        # if (
+        #     # (x > self.__LIMITS["x_max"])
+        #     # or (x < self.__LIMITS["x_min"])
+        #     # or (y > self.__LIMITS["y_max"])
+        #     (y < self.__LIMITS["y_min"])
+        #     # or (z > self.__LIMITS["z_max"])
+        #     # or (z < self.__LIMITS["z_min"])
+        # ):
+        #     raise Exception("Target position y_min is out of bounds!")
+        # if (
+        #     # (x > self.__LIMITS["x_max"])
+        #     # or (x < self.__LIMITS["x_min"])
+        #     # or (y > self.__LIMITS["y_max"])
+        #     # or (y < self.__LIMITS["y_min"])
+        #     (z > self.__LIMITS["z_max"])
+        #     # or (z < self.__LIMITS["z_min"])
+        # ):
+        #     raise Exception("Target position z_max is out of bounds!")
+
+        # if (
+        #     # (x > self.__LIMITS["x_max"])
+        #     # or (x < self.__LIMITS["x_min"])
+        #     # or (y > self.__LIMITS["y_max"])
+        #     # or (y < self.__LIMITS["y_min"])
+        #     # or (z > self.__LIMITS["z_max"])
+        #     (z < self.__LIMITS["z_min"])
+        # ):
+        #     raise Exception("Target position z_min is out of bounds!")
 
         return x, y, z
 

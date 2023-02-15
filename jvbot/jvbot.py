@@ -20,7 +20,7 @@ from jvbot.hardware.tray import Tray
 
 class Control:
     def __init__(self, area=0.07, savedir="."):
-        print('deniz 9/9/22')
+        print('deniz 10/05/22')
         self.area = area  # cm2
         self.pause = 0.05
         self.keithley = Keithley()
