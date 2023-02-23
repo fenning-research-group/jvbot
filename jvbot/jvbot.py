@@ -26,6 +26,7 @@ class Control:
         self.keithley = Keithley()
         self.gantry = Gantry()
         self.savedir = savedir
+        self.gantry.gohome()
 
     def open_shutter(self):
         # self.shutter.write(b'1')
@@ -105,6 +106,7 @@ class Control:
             raise ValueError("Either final_slot or slots must be specified!")
 
         for slot in tqdm(slots, desc="Scanning Tray"):
+            print(slot)
             self.gantry.moveto(self.tray(slot))
             self.scan_cell(slot, vmin, vmax, steps, direction)
         self.gantry.movetoload()

@@ -104,6 +104,7 @@ class Gantry:
             if line != "ok":
                 output.append(line)
             time.sleep(self.POLLINGDELAY)
+        #print('this is the value the variable "output" holds while it is in the write function:', output)
         return output
 
     def _enable_steppers(self):
@@ -116,6 +117,7 @@ class Gantry:
         found_coordinates = False
         while not found_coordinates:
             output = self.write("M114")  # get current position
+            #print('This is the value the variable "output" holds in the update function:',output)
             for line in output:
                 if line.startswith("X:"):
                     x = float(re.findall(r"X:(\S*)", line)[0])
@@ -124,6 +126,8 @@ class Gantry:
                     found_coordinates = True
                     break
         self.position = [x, y, z]
+
+        #print('This is the value x,y,z have in the update function which is then passed on to position:',x,y,z)
 
     # gantry methods
     def gohome(self):
@@ -213,12 +217,18 @@ class Gantry:
         """
         moves to target position in x,y,z (mm)
         """
+
+        # here it seems to set an x,y,z
+        print("x,y,z: ", x,y,z)
         try:
             if len(x) == 3:
                 x, y, z = x  # split 3 coordinates into appropriate variables
         except:
             pass
+        
+        # here it seems to override that x,y,z
         x, y, z = self.premove(x, y, z)  # will error out if invalid move
+        print("x,y,z 2:", x,y,z)
 
         if (x == self.position[0]) and (y == self.position[1]):
             zhop = False  # no use zhopping for no lateral movement
