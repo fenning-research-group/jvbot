@@ -72,8 +72,14 @@ class Tray:
                     ]
                 )
 
+             
+
             if self.CALIBRATIONSLOT is None:
                 self.CALIBRATIONSLOT = name #last slot, should be the bottom right one
+
+                print(name)
+
+        print(self._coordinates)
 
     def get_slot_coordinates(self, name):
         if self.__calibrated == False:
@@ -97,7 +103,11 @@ class Tray:
 
         with open(AVAILABLE_VERSIONS[self.version], "r") as f:
             constants = yaml.load(f, Loader=yaml.FullLoader)
+            print("In function calibrate, constants:", constants)
         constants['offset'] = {k:float(v) for k,v in zip(['x', 'y', 'z'], self.offset)}
+        print("in function calibrate, constants after loading offset?: \n", constants)
+        print(" also here is 'constants[offset]': ",constants['offset'])
+
 
         with open(AVAILABLE_VERSIONS[self.version], "w") as f:
             yaml.dump(constants, f)
