@@ -18,7 +18,7 @@ AVAILABLE_VERSIONS = {
 }
 
 from jvbot.hardware.gantry import Gantry
-from jvbot.hardware.control3 import Control_Sean ###Changed the name of the class so it doesn't clash with Control in jvbot file, importing control 3
+from jvbot.hardware.control3 import Control_Keithley 
 from jvbot.hardware.tray import Tray
 
 
@@ -27,7 +27,7 @@ class Control:
         print('deniz 9/9/22')
         self.area = area  # cm2
         self.pause = 0.05
-        self.control_sean = Control_Sean() ## control_sean is now the variable for controlling the keithley
+        self.control_keithley = Control_Keithley() ## control_keithley class communicates with keithley code
         self.gantry = Gantry()
         self.savedir = savedir
 
@@ -69,9 +69,9 @@ class Control:
             for line in zip(vmeas, j, i, p):
                 writer.writerow(line)
 
-    def scan_cell(self, name, vmin, vmax, direction = 'fwdrev',  vsteps = 50, light = True, preview = True): ##Making it so that the jv() function in Seans code gets what it needs
+    def scan_cell(self, name, vmin, vmax, direction = 'fwdrev',  vsteps = 50, light = True, preview = True): 
         
-        self.control_sean.jv(name, direction, vmin, vmax)
+        self.control_keithley.jv(name, direction, vmin, vmax)
         """
             Conducts a JV scan, previews data, saves file
             
@@ -128,27 +128,26 @@ class Control:
             raise ValueError("Either final_slot or slots must be specified!")
         
         if retry == True:
+            i = 0
             os.mkdir("retries")
             os.chdir("retries")
             jitter_list = [[0,0.5,1],[0.5,0,1],[0,0,2],[0,0.5,2]]
             j = 0
             for slot in tqdm(slots, desc="Scanning Tray"):
                 self.gantry.moveto(self.tray(slot)+jitter_list[j])
-                name_sean = "x"+str(self.position_to_number(slot)).zfill(2)+"_P1_S"+str(j+2)
+                name_jv = "x"+str(self.position_to_number(slot)).zfill(2)+"_P1_S"+str(j+2)
                 i = i+1
-                name = name_sean
-                # print("this is vmin and vmax:", vmin,vmax)
-                self.control_sean.jv(name, direction, vmin, vmax) ## Calls Sean's code and that handles the rest
+                name = name_jv
+                self.control_keithley.jv(name, direction, vmin, vmax) 
 
         else:
             i = 0
             for slot in tqdm(slots, desc="Scanning Tray"):
                 self.gantry.moveto(self.tray(slot))
-                name_sean = "x"+str(i+1).zfill(2)+"_P1_S1"
+                name_keithley = "x"+str(i+1).zfill(2)+"_P1_S1"
                 i = i+1
-                name = name_sean
-                # print("this is vmin and vmax:", vmin,vmax)
-                self.control_sean.jv(name, direction, vmin, vmax) ## Calls Sean's code and that handles the rest
+                name = name_keithley
+                self.control_keithley.jv(name, direction, vmin, vmax) 
 
         self.gantry.movetoload()
         self.copy_rename_csv()
