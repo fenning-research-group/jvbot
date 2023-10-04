@@ -1,9 +1,13 @@
 import os
 import yaml
+import shutil
+import pickle as pkl
 from natsort import natsorted
 import csv
 from datetime import datetime
 from tqdm import tqdm
+from frgtools import jv
+
 
 MODULE_DIR = os.path.dirname(__file__)
 TRAY_VERSIONS_DIR = os.path.join(MODULE_DIR, "tray_versions")
@@ -38,6 +42,7 @@ class Control:
         return
 
     def set_tray(self, version:str, calibrate:bool = False):
+        self.gantry.moveto([55,24,30])
         self.tray = Tray(version=version, gantry=self.gantry, calibrate=calibrate)
 
     def _save_to_csv(self, slot, vmeas, i, direction):
@@ -66,7 +71,7 @@ class Control:
 
     def scan_cell(self, name, vmin, vmax, direction = 'fwdrev',  vsteps = 50, light = True, preview = True): ##Making it so that the jv() function in Seans code gets what it needs
         
-        self.control_sean.jv(name, direction, vmin, vmax, vsteps = 50, light = True, preview = True)
+        self.control_sean.jv(name, direction, vmin, vmax)
         """
             Conducts a JV scan, previews data, saves file
             
@@ -112,6 +117,7 @@ class Control:
         vsteps = 50,
         final_slot=None,
         slots=None,
+        retry=None
         ## Added the necessary arguments here
     ):
         if final_slot is not None:
@@ -120,13 +126,124 @@ class Control:
             slots = allslots[: final_idx + 1]
         if slots is None:
             raise ValueError("Either final_slot or slots must be specified!")
+        
+        if retry == True:
+            os.mkdir("retries")
+            os.chdir("retries")
+            jitter_list = [[0,0.5,1],[0.5,0,1],[0,0,2],[0,0.5,2]]
+            j = 0
+            for slot in tqdm(slots, desc="Scanning Tray"):
+                self.gantry.moveto(self.tray(slot)+jitter_list[j])
+                name_sean = "x"+str(self.position_to_number(slot)).zfill(2)+"_P1_S"+str(j+2)
+                i = i+1
+                name = name_sean
+                # print("this is vmin and vmax:", vmin,vmax)
+                self.control_sean.jv(name, direction, vmin, vmax) ## Calls Sean's code and that handles the rest
 
-        for slot in tqdm(slots, desc="Scanning Tray"):
-            self.gantry.moveto(self.tray(slot))
-            name = slot
-            # print("this is vmin and vmax:", vmin,vmax)
-            self.control_sean.jv(name, direction, vmin, vmax) ## Calls Sean's code and that handles the rest
+        else:
+            i = 0
+            for slot in tqdm(slots, desc="Scanning Tray"):
+                self.gantry.moveto(self.tray(slot))
+                name_sean = "x"+str(i+1).zfill(2)+"_P1_S1"
+                i = i+1
+                name = name_sean
+                # print("this is vmin and vmax:", vmin,vmax)
+                self.control_sean.jv(name, direction, vmin, vmax) ## Calls Sean's code and that handles the rest
+
         self.gantry.movetoload()
+        self.copy_rename_csv()
+        retry_slots = self.flag_function()
+        if retry is not True:
+            self.scan_tray(tray_version,direction,vmin,vmax,vsteps = 50, slots = retry_slots, retry = True)
+
+    
+    def position_to_number(self, position):
+        try:
+            row, column = position[0], int(position[1:])
+            if 'A' <= row <= 'H' and 1 <= column <= 4:
+                return (ord(row) - ord('A')) * 4 + column
+        except ValueError:
+            pass
+        return "Invalid input"
+
+
+
+    def numbers_to_positions(self, numbers):
+        if not all(1 <= num <= 32 for num in numbers):
+            return ["Invalid Number" for num in numbers]
+        
+        row_labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+        column_labels = ['1', '2', '3', '4']
+        
+        positions = []
+        
+        for number in numbers:
+            row_index = (number - 1) // len(column_labels)
+            column_index = (number - 1) % len(column_labels)
+            positions.append(f"{row_labels[row_index]}{column_labels[column_index]}")
+        
+        positions = list(set(positions))
+        return(positions)
+
+   
+
+
+    def flag_function(self):
+            rawdf = jv.jv_metrics_pkl(rootdir=os.getcwd(), pce_cutoff=None, voc_cutoff=None, export_raw=True, area=.07) #.21
+            print(rawdf[['name','pixel','repeat','direction','pce','ff','voc','jsc','rsh','rs']].sort_values(by = ['name'], ascending = True))
+ 
+            column_ranges = {
+                'pce': (5, 25),  # Range for Column1
+                'ff': (50, 100)   # Range for Column2
+            }
+
+            # Create a list of row names where values do not fall within the specified range for each column
+            abnormal_rows = rawdf[
+                (rawdf['pce'] < column_ranges['pce'][0]) |
+                (rawdf['pce'] > column_ranges['pce'][1]) |
+                (rawdf['ff'] < column_ranges['ff'][0]) |
+                (rawdf['ff'] > column_ranges['ff'][1])
+            ]['name'].tolist()
+
+            abnormal_rows_int = [int(x) for x in abnormal_rows]
+
+            print("Row names with abnormal data for each column:")
+            print(abnormal_rows_int)
+            #return(len(abnormal_rows_int))
+             # Example usage:
+            
+            positions = self.numbers_to_positions(abnormal_rows_int)
+            print(positions)
+            return(positions)
+
+    def copy_rename_csv(self):
+
+        # Get the current working directory
+        current_directory = os.getcwd()
+        os.mkdir("light")
+
+        # List all files in the current directory
+        files = os.listdir(current_directory)
+
+        # Filter only the CSV files
+        csv_files = [file for file in files if file.endswith('.csv')]
+
+        # Iterate through CSV files and make a copy with modified names
+        for csv_file in csv_files:
+             # Extract the filename without extension
+             filename, extension = os.path.splitext(csv_file)
+                    
+             # Remove the first character from the filename
+             new_filename = filename[1:] + extension
+                    
+             # Construct the old and new file paths
+             old_path = os.path.join(current_directory, csv_file)
+             new_path = os.path.join(current_directory+"\\light", new_filename)
+                    
+             # Make a copy with the modified name
+             shutil.copy2(old_path, new_path)
+
+        print("Copies of CSV files with modified names created successfully.")
 
     # def _preview(self, v, j, label):
     #     def handle_close(evt, self):

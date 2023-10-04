@@ -83,7 +83,7 @@ class Gantry:
             "M92 X53.0 Y53.0 Z3200.0"
         )  # feedrate steps/mm, randomly resets to defaults sometimes idk why
         self.write(
-            "M201 X500.0 Y500.0 Z10.0"
+            "M201 X250.0 Y250.0 Z10.0"
         )  # acceleration steps/mm/mm, randomly resets to defaults sometimes idk why
         self.write(
             "M906 X580 Y580 Z25 E1"
@@ -92,10 +92,11 @@ class Gantry:
             "M84 S0"
         )  # disable stepper timeout, steppers remain engaged all the time
         self.write(
-            f"M203 X100 Y100 Z5.00"
+            f"M203 X50 Y50 Z1.00"
         )  # set max speeds, steps/mm. Z is hardcoded, limited by lead screw hardware.
 
     def write(self, msg):
+        #print("We are in selfwrite")
         self._handle.write(f"{msg}\n".encode())
         time.sleep(self.POLLINGDELAY)
         output = []
@@ -132,6 +133,7 @@ class Gantry:
 
     # gantry methods
     def gohome(self):
+        #print("Go home is sent")
         self.write("G28 Z")
         self.update()
         self.write("G28 X Y")
@@ -147,7 +149,7 @@ class Gantry:
                 "Stage has not been homed! Home with self.gohome() before moving please."
             )
         if x is None:
-            print("oops premove is getting the wrong position lol")
+            #print("oops premove is getting the wrong position lol")
             x = self.position[0]
         if y is None:
             y = self.position[1]
@@ -221,7 +223,7 @@ class Gantry:
         """
 
         # here it seems to set an x,y,z
-        print("(move to) x,y,z: ", x,y,z)
+        #print("(move to) x,y,z: ", x,y,z)
         try:
             if len(x) == 3:
                 x, y, z = x  # split 3 coordinates into appropriate variables
@@ -230,10 +232,10 @@ class Gantry:
         
         # here it seems to override that x,y,z
         x, y, z = self.premove(x, y, z)  # will error out if invalid move
-        print("(move to after premove) x,y,z 2:", x,y,z)
+        #print("(move to after premove) x,y,z 2:", x,y,z)
 
         if (x == self.position[0]) and (y == self.position[1]):
-            print("I've ended up at this zhop false nonsense")
+            #print("I've ended up at this zhop false nonsense")
             zhop = False  # no use zhopping for no lateral movement
         if zhop:
             z_ceiling = (
@@ -243,15 +245,15 @@ class Gantry:
             z_floor = max(
                 z_ceiling, self.__ZLIM
             )  # cant z-hop above build volume. mostly here for first move after homing.
-            print("passing z_ceiling to moveto function, z_ceiling, z_floor", z_ceiling,z_floor)
+            #print("passing z_ceiling to moveto function, z_ceiling, z_floor", z_ceiling,z_floor)
             self.moveto(z=z_ceiling, zhop=False)
-            print("Passing x,y, z_ceiling to moveto function, z_ceiling", z_ceiling)
+            #print("Passing x,y, z_ceiling to moveto function, z_ceiling", z_ceiling)
             self.moveto(x, y, z_ceiling, zhop=False)
-            print("Passing z to moveto function, z: ",z)
+            #print("Passing z to moveto function, z: ",z)
             self.moveto(z=z, zhop=False)
-            print("Moving on from doing 3 movetos")
+            #print("Moving on from doing 3 movetos")
         else:
-            print("going to move command with x,y,z as:", x,y,z)
+            #print("going to move command with x,y,z as:", x,y,z)
             self._movecommand(x, y, z)
 
     def movetoload(self):
@@ -259,7 +261,7 @@ class Gantry:
 
     def _movecommand(self, x: float, y: float, z: float):
         """internal command to execute a direct move from current location to new location"""
-        print("in move command; x,y,z",x,y,z)
+        #print("in move command; x,y,z",x,y,z)
         if self.position == [x, y, z]:
             return True  # already at target position
         else:
@@ -385,8 +387,8 @@ class GantryGUI:
         self.grid.addWidget(self.jogdown, 3, 3)
 
         ### step size selector buttons
-        self.steppt1 = QPushButton("0.1 mm")
-        self.steppt1.clicked.connect(partial(self.set_stepsize, stepsize=0.1))
+        self.steppt1 = QPushButton("0.5 mm")
+        self.steppt1.clicked.connect(partial(self.set_stepsize, stepsize=0.5))
         self.grid.addWidget(self.steppt1, 5, 0)
         self.step1 = QPushButton("1 mm")
         self.step1.clicked.connect(partial(self.set_stepsize, stepsize=1))
@@ -402,7 +404,7 @@ class GantryGUI:
         self.grid.addWidget(self.step100, 6, 1)
 
         self.stepsize_options = {
-            0.1: self.steppt1,
+            0.5: self.steppt1,
             1: self.step1,
             10: self.step10,
             50: self.step50,

@@ -136,6 +136,8 @@ class Control_Sean:
 			self.__previewFigure.canvas.mpl_connect('close_event', lambda x: handle_close(x, self))	# if preview figure is closed, lets clear the figure/axes handles so the next preview properly recreates the handles
 			self.__previewAxes.set_xlabel(xl)
 			self.__previewAxes.set_ylabel(yl)
+			self.__previewAxes.set_ylim(0,30)
+			self.__previewAxes.set_xlim(-.2,2)
 			plt.ion()
 			plt.show()
 			self.preview_figs[f'{xl},{yl}'] = [self.__previewFigure, self.__previewAxes]
