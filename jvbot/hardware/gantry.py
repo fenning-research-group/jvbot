@@ -149,7 +149,6 @@ class Gantry:
                 "Stage has not been homed! Home with self.gohome() before moving please."
             )
         if x is None:
-            #print("oops premove is getting the wrong position lol")
             x = self.position[0]
         if y is None:
             y = self.position[1]
@@ -221,9 +220,6 @@ class Gantry:
         """
         moves to target position in x,y,z (mm)
         """
-
-        # here it seems to set an x,y,z
-        #print("(move to) x,y,z: ", x,y,z)
         try:
             if len(x) == 3:
                 x, y, z = x  # split 3 coordinates into appropriate variables
@@ -232,10 +228,8 @@ class Gantry:
         
         # here it seems to override that x,y,z
         x, y, z = self.premove(x, y, z)  # will error out if invalid move
-        #print("(move to after premove) x,y,z 2:", x,y,z)
 
         if (x == self.position[0]) and (y == self.position[1]):
-            #print("I've ended up at this zhop false nonsense")
             zhop = False  # no use zhopping for no lateral movement
         if zhop:
             z_ceiling = (
@@ -245,15 +239,10 @@ class Gantry:
             z_floor = max(
                 z_ceiling, self.__ZLIM
             )  # cant z-hop above build volume. mostly here for first move after homing.
-            #print("passing z_ceiling to moveto function, z_ceiling, z_floor", z_ceiling,z_floor)
             self.moveto(z=z_ceiling, zhop=False)
-            #print("Passing x,y, z_ceiling to moveto function, z_ceiling", z_ceiling)
             self.moveto(x, y, z_ceiling, zhop=False)
-            #print("Passing z to moveto function, z: ",z)
             self.moveto(z=z, zhop=False)
-            #print("Moving on from doing 3 movetos")
         else:
-            #print("going to move command with x,y,z as:", x,y,z)
             self._movecommand(x, y, z)
 
     def movetoload(self):
@@ -261,7 +250,6 @@ class Gantry:
 
     def _movecommand(self, x: float, y: float, z: float):
         """internal command to execute a direct move from current location to new location"""
-        #print("in move command; x,y,z",x,y,z)
         if self.position == [x, y, z]:
             return True  # already at target position
         else:

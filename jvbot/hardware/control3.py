@@ -8,7 +8,7 @@ import csv
 
 
 
-class Control_Sean:
+class Control_Keithley:
 
 
 	def __init__(self, area = 0.07, address='GPIB0::22::INSTR'): 

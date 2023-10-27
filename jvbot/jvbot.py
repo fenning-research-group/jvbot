@@ -117,7 +117,7 @@ class Control:
         vsteps = 50,
         final_slot=None,
         slots=None,
-        retry=None
+        retry=False
         ## Added the necessary arguments here
     ):
         if final_slot is not None:
@@ -152,8 +152,8 @@ class Control:
         self.gantry.movetoload()
         self.copy_rename_csv()
         retry_slots = self.flag_function()
-        if retry is not True:
-            self.scan_tray(tray_version,direction,vmin,vmax,vsteps = 50, slots = retry_slots, retry = True)
+        #if retry is not True:
+        #    self.scan_tray(tray_version,direction,vmin,vmax,vsteps = 50, slots = retry_slots, retry = True)
 
     
     def position_to_number(self, position):
