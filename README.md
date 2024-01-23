@@ -1,3 +1,3 @@
 # JVBot
 
-documentation will eventually live here :p
+documentation will eventually live here
