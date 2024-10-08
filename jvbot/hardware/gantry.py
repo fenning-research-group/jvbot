@@ -83,7 +83,7 @@ class Gantry:
             "M92 X53.0 Y53.0 Z3200.0"
         )  # feedrate steps/mm, randomly resets to defaults sometimes idk why
         self.write(
-            "M201 X500.0 Y500.0 Z10.0"
+            "M201 X250.0 Y250.0 Z10.0"
         )  # acceleration steps/mm/mm, randomly resets to defaults sometimes idk why
         self.write(
             "M906 X580 Y580 Z25 E1"
@@ -92,18 +92,21 @@ class Gantry:
             "M84 S0"
         )  # disable stepper timeout, steppers remain engaged all the time
         self.write(
-            f"M203 X100 Y100 Z5.00"
+            f"M203 X50 Y50 Z1.00"
         )  # set max speeds, steps/mm. Z is hardcoded, limited by lead screw hardware.
 
     def write(self, msg):
+        #print("We are in selfwrite")
         self._handle.write(f"{msg}\n".encode())
         time.sleep(self.POLLINGDELAY)
         output = []
         while self._handle.in_waiting:
             line = self._handle.readline().decode("utf-8").strip()
             if line != "ok":
+                #print('this is the variable line in write function which is appended to output', line)
                 output.append(line)
             time.sleep(self.POLLINGDELAY)
+        #print('this is the value the variable "output" holds while it is in the write function:', output)
         return output
 
     def _enable_steppers(self):
@@ -116,6 +119,7 @@ class Gantry:
         found_coordinates = False
         while not found_coordinates:
             output = self.write("M114")  # get current position
+            #print('This is the value the variable "output" holds in the update function:',output)
             for line in output:
                 if line.startswith("X:"):
                     x = float(re.findall(r"X:(\S*)", line)[0])
@@ -125,8 +129,11 @@ class Gantry:
                     break
         self.position = [x, y, z]
 
+        #print('This is the value x,y,z have in the update function which is then passed on to position:',x,y,z)
+
     # gantry methods
     def gohome(self):
+        #print("Go home is sent")
         self.write("G28 Z")
         self.update()
         self.write("G28 X Y")
@@ -148,15 +155,64 @@ class Gantry:
         if z is None:
             y = self.position[2]
 
-        if (
-            (x > self.__LIMITS["x_max"])
-            or (x < self.__LIMITS["x_min"])
-            or (y > self.__LIMITS["y_max"])
-            or (y < self.__LIMITS["y_min"])
-            or (z > self.__LIMITS["z_max"])
-            or (z < self.__LIMITS["z_min"])
-        ):
-            raise Exception("Target position is out of bounds!")
+        # if (
+        #     (x > self.__LIMITS["x_max"])
+        #     # or (x < self.__LIMITS["x_min"])
+        #     # or (y > self.__LIMITS["y_max"])
+        #     # or (y < self.__LIMITS["y_min"])
+        #     # or (z > self.__LIMITS["z_max"])
+        #     # or (z < self.__LIMITS["z_min"])
+        # ):
+        #     raise Exception("Target position x_max is out of bounds!")
+
+
+        # if (
+        #     # (x > self.__LIMITS["x_max"])
+        #     (x < self.__LIMITS["x_min"])
+        #     # or (y > self.__LIMITS["y_max"])
+        #     # or (y < self.__LIMITS["y_min"])
+        #     # or (z > self.__LIMITS["z_max"])
+        #     # or (z < self.__LIMITS["z_min"])
+        # ):
+        #     raise Exception("Target position x_min is out of bounds!")
+
+        # if (
+        #     # (x > self.__LIMITS["x_max"])
+        #     # or (x < self.__LIMITS["x_min"])
+        #     (y > self.__LIMITS["y_max"])
+        #     # or (y < self.__LIMITS["y_min"])
+        #     # or (z > self.__LIMITS["z_max"])
+        #     # or (z < self.__LIMITS["z_min"])
+        # ):
+        #     raise Exception("Target position y_max is out of bounds!")
+        # if (
+        #     # (x > self.__LIMITS["x_max"])
+        #     # or (x < self.__LIMITS["x_min"])
+        #     # or (y > self.__LIMITS["y_max"])
+        #     (y < self.__LIMITS["y_min"])
+        #     # or (z > self.__LIMITS["z_max"])
+        #     # or (z < self.__LIMITS["z_min"])
+        # ):
+        #     raise Exception("Target position y_min is out of bounds!")
+        # if (
+        #     # (x > self.__LIMITS["x_max"])
+        #     # or (x < self.__LIMITS["x_min"])
+        #     # or (y > self.__LIMITS["y_max"])
+        #     # or (y < self.__LIMITS["y_min"])
+        #     (z > self.__LIMITS["z_max"])
+        #     # or (z < self.__LIMITS["z_min"])
+        # ):
+        #     raise Exception("Target position z_max is out of bounds!")
+
+        # if (
+        #     # (x > self.__LIMITS["x_max"])
+        #     # or (x < self.__LIMITS["x_min"])
+        #     # or (y > self.__LIMITS["y_max"])
+        #     # or (y < self.__LIMITS["y_min"])
+        #     # or (z > self.__LIMITS["z_max"])
+        #     (z < self.__LIMITS["z_min"])
+        # ):
+        #     raise Exception("Target position z_min is out of bounds!")
 
         return x, y, z
 
@@ -169,6 +225,8 @@ class Gantry:
                 x, y, z = x  # split 3 coordinates into appropriate variables
         except:
             pass
+        
+        # here it seems to override that x,y,z
         x, y, z = self.premove(x, y, z)  # will error out if invalid move
 
         if (x == self.position[0]) and (y == self.position[1]):
@@ -176,7 +234,8 @@ class Gantry:
         if zhop:
             z_ceiling = (
                 min(self.position[2], z) + self.ZHOP_HEIGHT
-            )  # closest z coordinate to bottom along path
+            )
+            # closest z coordinate to bottom along path
             z_floor = max(
                 z_ceiling, self.__ZLIM
             )  # cant z-hop above build volume. mostly here for first move after homing.
@@ -316,8 +375,8 @@ class GantryGUI:
         self.grid.addWidget(self.jogdown, 3, 3)
 
         ### step size selector buttons
-        self.steppt1 = QPushButton("0.1 mm")
-        self.steppt1.clicked.connect(partial(self.set_stepsize, stepsize=0.1))
+        self.steppt1 = QPushButton("0.5 mm")
+        self.steppt1.clicked.connect(partial(self.set_stepsize, stepsize=0.5))
         self.grid.addWidget(self.steppt1, 5, 0)
         self.step1 = QPushButton("1 mm")
         self.step1.clicked.connect(partial(self.set_stepsize, stepsize=1))
@@ -333,7 +392,7 @@ class GantryGUI:
         self.grid.addWidget(self.step100, 6, 1)
 
         self.stepsize_options = {
-            0.1: self.steppt1,
+            0.5: self.steppt1,
             1: self.step1,
             10: self.step10,
             50: self.step50,

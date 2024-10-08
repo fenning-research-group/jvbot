@@ -1,0 +1,13 @@
+numx: 4
+numy: 8
+offset:
+  x: 5.0
+  y: 24.0
+  z: 42.0
+openwidth: 12
+samplewidth: 10
+x0: 2.5
+xpitch: 17.5
+y0: 149
+ypitch: 17.8
+z_clearance: 15
