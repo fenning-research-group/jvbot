@@ -17,34 +17,21 @@ from jvbot.hardware.gantry import Gantry
 from jvbot.hardware.keithley import Keithley
 from jvbot.hardware.tray import Tray
 
-
 class Control:
-    def __init__(self, area=0.07, savedir="."):
-        print('deniz 9/9/22')
+    def __init__(self, area=0.048, savedir="."):
+
         self.area = area  # cm2
         self.pause = 0.05
         self.keithley = Keithley()
         self.gantry = Gantry()
         self.savedir = savedir
 
-    def open_shutter(self):
-        # self.shutter.write(b'1')
-        # self._shutteropen = True
-        return
-
-    def close_shutter(self):
-        # self.shutter.write(b'0')
-        # self._shutteropen = False
-        return
-
     def set_tray(self, version:str, calibrate:bool = False):
         self.tray = Tray(version=version, gantry=self.gantry, calibrate=calibrate)
 
     def _save_to_csv(self, slot, vmeas, i, direction):
         fpath = os.path.join(self.savedir, f"{slot}_{direction}.csv")
-        # i = i
-        # v = v
-        # i = i
+
         j = i / self.area
         p = j * vmeas
         dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -85,50 +72,32 @@ class Control:
             self.scan_cell(slot, vmin, vmax, steps, "reverse")
             self.scan_cell(slot, vmin, vmax, steps, "forward")
 
-        
-
     def scan_tray(
         self,
-        tray_version,
         vmin,
         vmax,
-        steps=5,
+        steps=51,
         direction="both",
+        repeat_scans = 1,
+        initial_slot = None,
         final_slot=None,
         slots=None,
     ):
         if final_slot is not None:
             allslots = natsorted(list(self.tray._coordinates.keys()))
             final_idx = allslots.index(final_slot)
-            slots = allslots[: final_idx + 1]
+            if initial_slot is not None:
+                initial_idx = allslots.index(initial_slot)
+                slots = allslots[initial_idx:final_idx+1]
+            else:
+                slots = allslots[:final_idx+1]
+
         if slots is None:
             raise ValueError("Either final_slot or slots must be specified!")
 
         for slot in tqdm(slots, desc="Scanning Tray"):
             self.gantry.moveto(self.tray(slot))
-            self.scan_cell(slot, vmin, vmax, steps, direction)
+            for i in range(repeat_scans):
+                name = f"{slot}_{i}"
+                self.scan_cell(name, vmin, vmax, steps, direction)
         self.gantry.movetoload()
-
-    # def _preview(self, v, j, label):
-    #     def handle_close(evt, self):
-    #         self.__previewFigure = None
-    #         self.__previewAxes = None
-
-    #     if (
-    #         self.__previewFigure is None
-    #     ):  # preview window is not created yet, lets make it
-    #         plt.ioff()
-    #         self.__previewFigure, self.__previewAxes = plt.subplots()
-    #         self.__previewFigure.canvas.mpl_connect(
-    #             "close_event", lambda x: handle_close(x, self)
-    #         )  # if preview figure is closed, lets clear the figure/axes handles so the next preview properly recreates the handles
-    #         plt.ion()
-    #         plt.show()
-
-    #     # for ax in self.__previewAxes:	#clear the axes
-    #     # 	ax.clear()
-    #     self.__previewAxes.plot(v, j, label=label)
-    #     self.__previewAxes.legend()
-    #     self.__previewFigure.canvas.draw()
-    #     self.__previewFigure.canvas.flush_events()
-    #     time.sleep(1e-4)  # pause allows plot to update during series of measurements

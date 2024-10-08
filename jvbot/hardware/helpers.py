@@ -1,7 +1,6 @@
 import serial.tools.list_ports as lp
 import sys
 
-
 def which_os():
     if sys.platform.startswith("win"):
         return "Windows"
@@ -13,7 +12,6 @@ def which_os():
     else:
         raise EnvironmentError("Unsupported platform")
 
-
 def _get_port_windows(device_identifiers):
     for p in lp.comports():
         match = True
@@ -24,7 +22,6 @@ def _get_port_windows(device_identifiers):
             return p.device
     raise ValueError("Cannot find a matching port!")
 
-
 def _get_port_linux(serial_number):
     """
     finds port number for a given hardware serial number
@@ -33,7 +30,6 @@ def _get_port_linux(serial_number):
         if p.serial_number and p.serial_number == serial_number:
             return p.device
     return None
-
 
 def get_port(device_identifiers):
     operatingsystem = which_os()

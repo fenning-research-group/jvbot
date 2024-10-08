@@ -8,7 +8,6 @@ MODULE_DIR = os.path.dirname(__file__)
 with open(os.path.join(MODULE_DIR, "hardwareconstants.yaml"), "r") as f:
     constants = yaml.load(f, Loader=yaml.FullLoader)["keithley"]
 
-
 class Keithley(Keithley2400):
     def __init__(self, address=None):
         if address is None:
@@ -78,8 +77,6 @@ class Keithley(Keithley2400):
         voc = self.measure()[0]
 
         self.disable_source()
-        # print(f"Voc: {voc*1000:.2f} mV")
-
         return voc
 
     def iv(self, vmin, vmax, steps=51):

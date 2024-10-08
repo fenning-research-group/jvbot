@@ -7,15 +7,12 @@ import PyQt5
 import yaml
 import os
 
-# from PyQt5.QtCore.Qt import AlignHCenter
 from functools import partial
 from jvbot.hardware.helpers import get_port
-
 
 MODULE_DIR = os.path.dirname(__file__)
 with open(os.path.join(MODULE_DIR, "hardwareconstants.yaml"), "r") as f:
     constants = yaml.load(f, Loader=yaml.FullLoader)
-
 
 class Gantry:
     def __init__(self, port=None):
@@ -57,7 +54,6 @@ class Gantry:
     def connect(self):
         self._handle = serial.Serial(port=self.port, timeout=1, baudrate=115200)
         self.update()
-        # self.update_gripper()
         if self.position == [
             self.__LIMITS["x_max"],
             self.__LIMITS["y_max"],
@@ -68,7 +64,7 @@ class Gantry:
                 None,
                 None,
             ]  # start at None's to indicate stage has not been homed.
-        # self.write('M92 X40.0 Y26.77 Z400.0')
+
         self.set_defaults()
         print("Connected to gantry")
 

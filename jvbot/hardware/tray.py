@@ -11,7 +11,6 @@ AVAILABLE_VERSIONS = {
     if ".yaml" in f
 }
 
-
 class Tray:
     """
     General class for defining sample trays. Primary use is to calibrate the coordinate system of this workspace to
@@ -22,8 +21,6 @@ class Tray:
         self._calibrated = False  # set to True after calibration routine has been run
         self.gantry = gantry
         self._load_version(version, calibrate=calibrate)  # generates grid of sample slot coordinates
-
-        # coordinate system properties
 
     def _load_version(self, version, calibrate=False):
         if version not in AVAILABLE_VERSIONS:
