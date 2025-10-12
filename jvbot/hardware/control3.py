@@ -22,6 +22,14 @@ class Control_Keithley:
 		self.compliance_voltage = 2 # V
 		self.buffer_points = 2
 		self.counts = 2
+		self._scan_speeds = {
+			"H": [0.1, 0.1, 0.1], # [I, V, R]
+			"M": [1, 1, 1], # [I, V, R]
+			"L": [10, 10, 10], # [I, V, R]
+		}
+		self._current_nplc = 1
+		self._voltage_nplc = 1
+		self._resistance_nplc = 1
 		self.__previewFigure = None
 		self.__previewAxes = None
 		self.connect(keithley_address=address)
@@ -207,9 +215,10 @@ class Control_Keithley:
 		i_std = np.zeros((vsteps,))
 
 		# set scan settings:
-		self.keithley.current_nplc = NPLC
-		self.keithley.voltage_nplc = NPLC
-		self.keithley.resistance_nplc = NPLC
+		i_n, v_n, r_n = NPLC
+		self.keithley.current_nplc = i_n
+		self.keithley.voltage_nplc = v_n
+		self.keithley.resistance_nplc = r_n
 
 		# set scan
 		self._source_voltage_measure_current()
@@ -232,6 +241,61 @@ class Control_Keithley:
 		self.keithley.current_nplc = self._current_nplc
 		self.keithley.voltage_nplc = self._voltage_nplc
 		self.keithley.resistance_nplc = self._resistance_nplc
+
+		return v, i, vmeas, vmeas_std, i_std, light
+
+	def _format_jv_2(self, v, i, vmeas, vmeas_std, i_std, light, name, dir, scan_number, scan_speed, preview = True):
+		"""
+		Uses output of _jv_sweep_2 along with crucial info to preview and save JV data
+		
+			Args:
+				v (np.ndarray(float)): applied voltage sources array (output from _sweep_jv_2)
+				i (np.ndarray(float)): measured current array (output from _sweep_jv_2)
+				vmeas (np.ndarray(float)): measured voltage array (output from _sweep_jv_2)
+				vmeas_std (np.ndarray(float)): measured std.dev of voltage array (output from _sweep_jv_2)
+				i_std (np.ndarray(float)): measured std.dev of current array (output from _sweep_jv_2)
+				light (boolean = True): boolean to describe whether light was on
+				name (string): name of device
+				dir (string): direction of scan -- fwd or rev
+				scan_number (int): suffice for multiple scans in a row
+				preview (boolean = True): option to preview in graph
+		"""
+		# calc param
+		j = []
+		j_std = []
+		for i_, i_std_ in zip(i, i_std):
+			j.append(-i_*1000/self.area) # amps to mA/cm2. sign flip for solar cell current convention
+			j_std.append(-i_std_*1000/self.area) # amps to mA/cm2. sign flip for solar cell current convention
+		p = [j_*v_ for j_, v_ in zip(j, vmeas)]
+		p_std = [(j_*v_)*np.sqrt(((v_std**2)/v_) + ((j_std**2)/j_)) for j_, j_std, v_, v_std in zip(j, j_std, vmeas, vmeas_std)]
+
+		# build dataframe
+		data = pd.DataFrame({
+			"Voltage (V)": v,
+			"Current Density (mA/cm2)": j,
+			"Current (A)": i,
+			"Measured Voltage (V)": vmeas,
+			"Power Density (mW/cm2)": p,
+			"Voltage Standard Deviation (V)": vmeas_std,
+			"Current Density Standard Deviation (mA/cm2)": j_std,
+			"Current Standard Deviation (A)": i_std,
+			"Power Density Standard Deviation (mW/cm2)": p_std,
+		})
+
+		# save csv:
+		if light: 
+			light_on_off = "light"
+		else:
+			light_on_off = "dark"
+		if scan_number is None:
+			scan_n = ""
+		else:
+			scan_n = f"_{scan_number}"
+		if scan_speed is None:
+			scan_s = ""
+		else:
+			scan_s = f"_{scan_speed}"
+		data.to_csv(f'{name}{scan_n}_{dir}_{light_on_off}_{scan_speed}.csv')
 		
 
 
@@ -677,7 +741,22 @@ class Control_Keithley:
 			ctime = time.time()-stime
 
 
-	def jv_rate(self, name, direction, vmin, vmax, vsteps, NLPC = 1, buffer_count = 2, light = True, preview = True):
+	def jv_rate(self, name, direction, vmin, vmax, vsteps, speed = "M", buffer_count = 2, light = True, preview = True):
+		"""
+			Conducts a JV scan, previews data, saves file
+			
+			Args:
+				name (string): name of device
+				direction (string): direction -- fwd, rev, fwdrev, or revfwd
+				vmin (float): start voltage for JV sweep (V)
+				xmax (float): end voltage for JV sweep (V)
+				vsteps (int = 50): number of voltage steps between max and min
+				speed (string): whether to scan current/voltage with a slow, med, or fast rate
+				buffer_count (int = 2): number of scans to average per datapoint
+				light (boolean = True): boolean to describe status of light
+				preview (boolean = True): boolean to determine if data is plotted
+		"""
+		
 		if len(direction) == 3:
 			dir_0 = direction
 			skip_dir_1 = True
@@ -703,11 +782,14 @@ class Control_Keithley:
 			vend_0 = v0
 			vstart_1 = v0
 			vend_1 = v1
+		if speed not in ["M", "L", "H"]:
+			raise Exception(f'the `speed` input must be one of ["L", "M", "H"], corresponding to low, medium, high scan rates')
+		NPLC = self._scan_speeds[speed]
 		
 
 
-		v, i, vmeas, light = self._jv_sweep(vstart = vstart_0, vend = vend_0, vsteps = vsteps, light = light)
-		data = self._format_jv(v = v, i = i, vmeas = vmeas, light = light, name = name, dir = dir_0, scan_number = None, preview = True)
+		v, i, vmeas, vmeas_std, i_std, light = self._jv_sweep_2(vstart = vstart_0, vend = vend_0, vsteps = vsteps, buffer_counts = buffer_count, NPLC = NPLC, light = light)
+		data = self._format_jv_2(v = v, i = i, vmeas = vmeas, vmeas_std = vmeas_std, i_std = i_std, light = light, name = name, dir = dir_0, scan_number = None, scan_speed = speed, preview = preview)
 		if not skip_dir_1:
-			v, i, vmeas, light = self._jv_sweep(vstart = vstart_1, vend = vend_1, vsteps = vsteps, light = light)
-			data = self._format_jv(v = v, i = i, vmeas = vmeas, light = light, name = name, dir = dir_1, scan_number = None, preview = True)
+			v, i, vmeas, vmeas_std, i_std, light = self._jv_sweep_2(vstart = vstart_1, vend = vend_1, vsteps = vsteps, buffer_counts = buffer_count, NPLC = NPLC,  light = light)
+			data = self._format_jv_2(v = v, i = i, vmeas = vmeas, vmeas_std = vmeas_std, i_std = i_std, light = light, name = name, dir = dir_1, scan_number = None, scan_speed = speed, preview = preview)
