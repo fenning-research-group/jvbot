@@ -71,7 +71,7 @@ class Control:
 
     def scan_cell(self, name, vmin, vmax, direction = 'fwdrev',  vsteps = 50, light = True, preview = True): 
         
-        self.control_keithley.jv(name, direction, vmin, vmax)
+        self.control_keithley.jv(name, direction, vmin, vmax, vsteps, light, preview)
         """
             Conducts a JV scan, previews data, saves file
             

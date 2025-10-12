@@ -88,7 +88,7 @@ class Control_Keithley:
 		self.keithley.apply_voltage()
 		self.keithley.measure_current()
 		self.keithley.compliance_current = self.compliance_current
-		self.keithley.souce_voltage = 0
+		self.keithley.source_voltage = 0
 
 
 	def _source_current_measure_voltage(self):
@@ -186,6 +186,53 @@ class Control_Keithley:
 		
 		# build dataframe and return
 		return v, i, vmeas, light
+	
+	def _measure_2(self, **kwargs):
+		counts = kwargs.get('buffer_counts', self.counts) # how many points to have in buffer
+		trigger_delay = kwargs.get('trigger_delay', 0) # auto-set to 0 in keithley
+		timeout = kwargs.get('buffer_timeout', 60) # stop the buffer after this many seconds
+		interval = kwargs.get('buffer_interval', 0.1) # how many seconds between pings to check if buffer is full
+		self.keithley.config_buffer(points = counts, delay = trigger_delay)
+		self.keithley.start_buffer()
+		self.keithley.wait_for_buffer(timeout = timeout, interval = interval)
+		return self.keithley.means, self.keithley.standard_devs
+
+	def _jv_sweep_2(self, vstart, vend, vsteps, buffer_counts, NPLC = 1.0, delay_time = 0.001, trigger_time = 0, light = True):
+		
+		# setup v, vmeas, i
+		v = np.linspace(vstart, vend, vsteps)
+		vmeas = np.zeros((vsteps,))
+		i = np.zeros((vsteps,))
+		vmeas_std = np.zeros((vsteps,))
+		i_std = np.zeros((vsteps,))
+
+		# set scan settings:
+		self.keithley.current_nplc = NPLC
+		self.keithley.voltage_nplc = NPLC
+		self.keithley.resistance_nplc = NPLC
+
+		# set scan
+		self._source_voltage_measure_current()
+		self.keithley.source_voltage = vstart
+		self.keithley.enable_source()
+
+		if light:
+			self.open_shutter()
+			# turn on G2VPico Here, for an input spectra option
+		for m, v_ in enumerate(v):
+			self.keithley.source_voltage = v_
+			means, std = self._measure_2(buffer_counts = buffer_counts, trigger_time = trigger_time)
+			vmeas[m], i[m], _ = means # [V, I, R]
+			vmeas_std[m], i_std[m], _ = std # [σ_V, σ_I, σ_R]
+		if light: 
+			self.close_shutter()
+		self.keithley.disable_source
+
+		# re-set to defaults:
+		self.keithley.current_nplc = self._current_nplc
+		self.keithley.voltage_nplc = self._voltage_nplc
+		self.keithley.resistance_nplc = self._resistance_nplc
+		
 
 
 	def _format_jv(self, v, i, vmeas, light, name, dir, scan_number, preview = True):
@@ -629,3 +676,38 @@ class Control_Keithley:
 				n+=1
 			ctime = time.time()-stime
 
+
+	def jv_rate(self, name, direction, vmin, vmax, vsteps, NLPC = 1, buffer_count = 2, light = True, preview = True):
+		if len(direction) == 3:
+			dir_0 = direction
+			skip_dir_1 = True
+		else:
+			dir_0 = direction[:3]
+			skip_dir_1 = False
+			dir_1 = direction[3:]
+		
+		if abs(vmin) < abs(vmax):
+			v0 = vmin
+			v1 = vmax
+		elif abs(vmin) > abs(vmax):
+			v0 = vmax
+			v1 = vmin
+		# fwd is going to be from the lower abs v to higher abs v, reverse will be opposite
+		if 'f' in dir_0:
+			vstart_0 = v0
+			vend_0 = v1
+			vstart_1 = v1
+			vend_1 = v0
+		else:
+			vstart_0 = v1
+			vend_0 = v0
+			vstart_1 = v0
+			vend_1 = v1
+		
+
+
+		v, i, vmeas, light = self._jv_sweep(vstart = vstart_0, vend = vend_0, vsteps = vsteps, light = light)
+		data = self._format_jv(v = v, i = i, vmeas = vmeas, light = light, name = name, dir = dir_0, scan_number = None, preview = True)
+		if not skip_dir_1:
+			v, i, vmeas, light = self._jv_sweep(vstart = vstart_1, vend = vend_1, vsteps = vsteps, light = light)
+			data = self._format_jv(v = v, i = i, vmeas = vmeas, light = light, name = name, dir = dir_1, scan_number = None, preview = True)
